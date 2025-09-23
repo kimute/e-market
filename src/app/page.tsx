@@ -1,18 +1,32 @@
+import { HomeIcon } from "@heroicons/react/16/solid";
+import Link from "next/link";
+
 export default function Home() {
   return (
-    <main className="bg-gray-500 h-screen flex items-center justify-center p-5 dark:bg-gray-700">
-      <div className="bg-white shadow-lg max-w-screen-sm w-full rounded-3xl p-5 flex flex-col gap-2">
-        <div className="group flex flex-col">
-          <input
-            className="bg-gray-100 w-full"
-            placeholder="write your email"
-          />
-          <span className="group-focus-within:block hidden">
-            Make sure it is valid email
-          </span>
-          <button className="btn">Submit</button>
-        </div>
+    <div className="min-h-screen flex flex-col items-center p-6">
+      <div className="my-auto *:font-medium flex flex-col items-center gap-2">
+        <HomeIcon className="size-10 text-amber-500" />
+        <h1 className="text-4xl">E-market</h1>
+        <h2 className="text-2xl">Welcome to E-market</h2>
       </div>
-    </main>
+      <div className="flex flex-col items-center gap-3 w-full">
+        <Link
+          href="/create-account"
+          className="w-full bg-orange-500 !text-white text-lg font-medium py-2.5 rounded-md text-center hover:bg-orange-600 transition-colors block"
+        >
+          Start
+        </Link>
+      </div>
+      <div className="flex gap-2 mt-2">
+        <span> you have account?</span>
+        <Link
+          href="/login"
+          className="hover:underline
+  underline-offset-4"
+        >
+          Login
+        </Link>
+      </div>
+    </div>
   );
 }

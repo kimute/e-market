@@ -11,7 +11,9 @@
   height: var(--btn-height);
   background-color: var(--btn-bg);
 }
-
+a {
+  @apply text-orange-500;
+}
 /* In Tailwind, JIT mode is a feature that generates CSS utility classes on demand in real time. */
 /* :root {
   --background: #ffffff;
