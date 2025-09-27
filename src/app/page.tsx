@@ -10,10 +10,7 @@ export default function Home() {
         <h2 className="text-2xl">Welcome to E-market</h2>
       </div>
       <div className="flex flex-col items-center gap-3 w-full">
-        <Link
-          href="/create-account"
-          className="w-full bg-orange-500 !text-white text-lg font-medium py-2.5 rounded-md text-center hover:bg-orange-600 transition-colors block"
-        >
+        <Link href="/create-account" className="primary-btn py-2.5 text-lg">
           Start
         </Link>
       </div>
