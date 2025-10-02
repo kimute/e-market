@@ -2,14 +2,29 @@
 
 import z from "zod"
 
+
+const checkUserName = (username: string) => !username.includes("admin");
+
+
+const chekPassword = ({ password, confirm_password }: { password: string, confirm_password: string }) => password === confirm_password;
+
+// better than this .refine(checkUserName, "admin not allowed"),
+//.refine((username) => !username.includes("admin"), "admin not allowed"),
+
 const formSchema = z.object({
-    username: z.string().min(3).max(10),
-    email: z.email().lowercase().trim(),
+    // zod v4  invalid_type_error , required_error ->deprecated
+    username: z.string({
+        error: (issue) => issue.input === undefined ? "required" : "not a string"
+    }).min(3, "too short").max(10, "too long").refine(checkUserName, "admin not allowed"),
+    // transfomation: trim, toLowerCase, transform((unsername) => `aa${username}`):add aa in front of username
+    email: z.email().lowercase().trim().toLowerCase(),
     password: z.string().min(3).max(10),
     confirm_password: z.string().min(3).max(10),
-
-
-})
+}).refine(chekPassword, { error: "both password shoud be same", path:["confirm_password"] })
+// message is deprecated zod v4 using error: "" instead
+// If you use .refine(checkPassword, "both passwords should be the same"),
+// it treats it as a form-level error. So update it like this instead:
+// .refine(checkPassword, { message: "both passwords should be the same", path: ["confirm_password"] })
 
 export async function createAccount(prevState: any, formData: FormData) {
     const data = {

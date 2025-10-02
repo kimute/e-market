@@ -1,8 +1,17 @@
+"use client";
 import FormButton from "@/components/form-button";
 import FormInput from "@/components/form-input";
-import SocialLogin from "@/components/social-login";
+import { useActionState } from "react";
+import { smsLogin } from "./actions";
 
-export default function LogIn() {
+const initialState = {
+  token: false,
+  phone: "",
+};
+
+export default function SMSLogin() {
+  const [state, action] = useActionState(smsLogin, initialState);
+  console.log("Current state:", state); // 디버깅용
   return (
     <div className="flex flex-col gap-10 px-6 py-8">
       {/* welcome */}
@@ -11,16 +20,26 @@ export default function LogIn() {
         <h2 className="text-xl">Verify your phone number!</h2>
       </div>
       {/* form */}
-      <form action="" className="flex flex-col gap-3">
-        <FormInput name="number" type="number" placeholder="Phone number" required errors={[]} />
+      <form action={action} className="flex flex-col gap-3">
         <FormInput
-          name="number"
+          name="phone"
+          type="text"
+          placeholder="Phone number"
+          required
+          errors={state.FieldErrors}
+          defaultValue={state.phone || ""}
+        />
+        
+        {state.token ? <FormInput
+          name="token"
           type="number"
           placeholder="Verification code"
           required
-          errors={[]}
-        />
-        <FormButton text="Verify" />
+          min={100000}
+          max={999999}
+          errors={state.FieldErrors}
+        />: null}
+        <FormButton text="Verify" type="submit"/> 
       </form>
     </div>
   );

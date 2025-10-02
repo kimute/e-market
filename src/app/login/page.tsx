@@ -4,8 +4,8 @@ import FormButton from "@/components/form-button";
 import FormInput from "@/components/form-input";
 import SocialLogin from "@/components/social-login";
 import { useActionState } from "react";
-
-import { handleForm } from "./actions";
+import { PASSWORD_MIN_LENGTH } from "@/lib/constants";
+import { login } from "./actions";
 
 export default function LogIn() {
   // test for route handler
@@ -20,7 +20,7 @@ export default function LogIn() {
   //     console.log(await res.json());
   //   };
 
-  const [state, action] = useActionState(handleForm, null);
+  const [state, action] = useActionState(login, null);
 
   return (
     <div className="flex flex-col gap-10 px-6 py-8">
@@ -37,14 +37,15 @@ export default function LogIn() {
           type="email"
           placeholder="Email"
           required
-          errors={[]}
+          errors={state?.fieldErrors.email}
         />
         <FormInput
           name="password"
           type="password"
           placeholder="Password"
+          minLength={PASSWORD_MIN_LENGTH}
           required
-          errors={state?.errors ?? []}
+          errors={state?.fieldErrors.password}
         />
         <FormButton type="submit" text="LogIn" />
       </form>
