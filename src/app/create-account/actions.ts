@@ -1,10 +1,41 @@
 "use server"
 
+import db from "@/lib/db";
 import z from "zod"
+import bcrypt from "bcrypt";
+import getSession from "@/lib/session/session";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 
 const checkUserName = (username: string) => !username.includes("admin");
 
+const checkUniqueUsername = async (username: string) => {
+    const user = await db.user.findUnique({
+        where: {
+            username,
+        },
+        select: {
+            id: true,
+        },
+    });
+    return !Boolean(user); // / Boolean(user) is true if user exists, false if not
+};
+
+// When you want to check data from the DB (API), you can create a function like below.
+// Since it's a fetch function, you should use await formSchema.safeParseAsync when parsing.
+const checkUniqueEmail = async (email: string) => {
+    const user = await db.user.findUnique({
+        where: {
+            email,
+        },
+        select: {
+            id: true,
+            email: true,
+        },
+    });
+    return Boolean(user) === false;
+};
 
 const chekPassword = ({ password, confirm_password }: { password: string, confirm_password: string }) => password === confirm_password;
 
@@ -15,12 +46,15 @@ const formSchema = z.object({
     // zod v4  invalid_type_error , required_error ->deprecated
     username: z.string({
         error: (issue) => issue.input === undefined ? "required" : "not a string"
-    }).min(3, "too short").max(10, "too long").refine(checkUserName, "admin not allowed"),
+    }).min(3, "too short").max(10, "too long").refine(checkUserName, "admin not allowed").refine(checkUniqueUsername, "this user name is already taken"),
     // transfomation: trim, toLowerCase, transform((unsername) => `aa${username}`):add aa in front of username
-    email: z.email().lowercase().trim().toLowerCase(),
+    email: z.email().lowercase().trim().toLowerCase().refine(
+        checkUniqueEmail,
+        "There is an account already registered with that email."
+    ),
     password: z.string().min(3).max(10),
     confirm_password: z.string().min(3).max(10),
-}).refine(chekPassword, { error: "both password shoud be same", path:["confirm_password"] })
+}).refine(chekPassword, { error: "both password shoud be same", path: ["confirm_password"] })
 // message is deprecated zod v4 using error: "" instead
 // If you use .refine(checkPassword, "both passwords should be the same"),
 // it treats it as a form-level error. So update it like this instead:
@@ -47,8 +81,9 @@ export async function createAccount(prevState: any, formData: FormData) {
     //       confirm_password: ''
     //     }
     //   }
-    const result = formSchema.safeParse(data);
-
+    // use blow instead of const result = formSchema.safeParse(data);
+    const result = await formSchema.safeParseAsync(data);
+    console.log("result:", result)
     // error pattern
     // {
     //     "origin": "string",
@@ -69,6 +104,28 @@ export async function createAccount(prevState: any, formData: FormData) {
         // you can display each field’s error state through the state from useActionState
         return { fieldErrors: flatten.fieldErrors };
 
+    } else {
+        // hash password
+        const hashedPassword = await bcrypt.hash(result.data.password, 12);
+        const user = await db.user.create({
+            data: {
+                username: result.data.username,
+                email: result.data.email,
+                password: hashedPassword,
+            },
+            select: {
+                id: true,
+            },
+        });
+        console.log(user)
+        // login ? give the user a cookie (with id)
+        // Once the cookie is sent to the user, the browser will automatically send it to the server afterward (post or get, etc.)
+        // Since this app doesn't have a session server, we use iron-session
+        const session = await getSession();
+        session.id = user.id.toString();
+        await session.save();
+        revalidatePath("/profile");
+        return redirect("/profile");
     }
 
 }
