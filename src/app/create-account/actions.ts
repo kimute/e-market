@@ -1,7 +1,7 @@
 "use server"
 
 import db from "@/lib/db";
-import z from "zod"
+import z, { email } from "zod"
 import bcrypt from "bcrypt";
 import getSession from "@/lib/session/session";
 import { revalidatePath } from "next/cache";
@@ -10,32 +10,32 @@ import { redirect } from "next/navigation";
 
 const checkUserName = (username: string) => !username.includes("admin");
 
-const checkUniqueUsername = async (username: string) => {
-    const user = await db.user.findUnique({
-        where: {
-            username,
-        },
-        select: {
-            id: true,
-        },
-    });
-    return !Boolean(user); // / Boolean(user) is true if user exists, false if not
-};
+// const checkUniqueUsername = async (username: string) => {
+//     const user = await db.user.findUnique({
+//         where: {
+//             username,
+//         },
+//         select: {
+//             id: true,
+//         },
+//     });
+//     return !Boolean(user); // / Boolean(user) is true if user exists, false if not
+// };
 
 // When you want to check data from the DB (API), you can create a function like below.
 // Since it's a fetch function, you should use await formSchema.safeParseAsync when parsing.
-const checkUniqueEmail = async (email: string) => {
-    const user = await db.user.findUnique({
-        where: {
-            email,
-        },
-        select: {
-            id: true,
-            email: true,
-        },
-    });
-    return Boolean(user) === false;
-};
+// const checkUniqueEmail = async (email: string) => {
+//     const user = await db.user.findUnique({
+//         where: {
+//             email,
+//         },
+//         select: {
+//             id: true,
+//             email: true,
+//         },
+//     });
+//     return Boolean(user) === false;
+// };
 
 const chekPassword = ({ password, confirm_password }: { password: string, confirm_password: string }) => password === confirm_password;
 
@@ -46,12 +46,54 @@ const formSchema = z.object({
     // zod v4  invalid_type_error , required_error ->deprecated
     username: z.string({
         error: (issue) => issue.input === undefined ? "required" : "not a string"
-    }).min(3, "too short").max(10, "too long").refine(checkUserName, "admin not allowed").refine(checkUniqueUsername, "this user name is already taken"),
+    }).min(3, "too short").max(10, "too long").refine(checkUserName, "admin not allowed")
+        // superRefine allows for async validation and more complex validation logic
+        // Unlike .refine(), superRefine gives you access to the validation context
+        // This enables you to add custom issues with specific error codes and paths
+        .superRefine(async (username, context) => {
+            // Check if username already exists in the database
+            const user = await db.user.findUnique({
+                where: {
+                    username,
+                },
+                select: {
+                    id: true,
+                },
+            });
+
+            // If user exists, add a custom validation issue
+            if (user) {
+                // context.addIssue() allows you to add custom validation errors
+                context.addIssue({
+                    code: "custom",                              // Error code type
+                    message: "This username is already taken",   // User-friendly error message
+                    path: ["username"],                          // Field path for the error
+                    fatal: true                                  // Stop validation on this error
+                })
+                // z.NEVER indicates that validation should never succeed after this point
+                return z.NEVER; // if check faild none of next validation check do not work any more
+            }
+        }),
     // transfomation: trim, toLowerCase, transform((unsername) => `aa${username}`):add aa in front of username
-    email: z.email().lowercase().trim().toLowerCase().refine(
-        checkUniqueEmail,
-        "There is an account already registered with that email."
-    ),
+    email: z.email().lowercase().trim().toLowerCase().superRefine(async (email, context) => {
+        const isEmialExist = await db.user.findUnique({
+            where: {
+                email,
+            },
+            select: {
+                id: true,
+            },
+        });
+        if (isEmialExist) {
+            context.addIssue({
+                code: "custom",
+                message: "This email is already taken",
+                path: ["email"],
+                fatal: true,
+            })
+            return z.NEVER
+        }
+    }),
     password: z.string().min(3).max(10),
     confirm_password: z.string().min(3).max(10),
 }).refine(chekPassword, { error: "both password shoud be same", path: ["confirm_password"] })
@@ -117,12 +159,12 @@ export async function createAccount(prevState: any, formData: FormData) {
                 id: true,
             },
         });
-        console.log(user)
+        console.log(user) //TODO: delete
         // login ? give the user a cookie (with id)
         // Once the cookie is sent to the user, the browser will automatically send it to the server afterward (post or get, etc.)
         // Since this app doesn't have a session server, we use iron-session
         const session = await getSession();
-        session.id = user.id.toString();
+        session.id = user.id;
         await session.save();
         revalidatePath("/profile");
         return redirect("/profile");
