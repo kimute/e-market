@@ -1,10 +1,26 @@
 import { ChatBubbleOvalLeftEllipsisIcon } from "@heroicons/react/16/solid";
 import Link from "next/link";
 
+// ✅ Internal pages - Use Link
+//  <Link href="/profile">Profile</Link>
+//  <Link href="/products">Products</Link>
+
+// ✅ OAuth/External - Use a tag
+//  <a href="/github/start">GitHub Login</a>
+//  <a href="https://google.com">Google</a>
+
+// ✅ Link + prefetch={false} is also possible - todo: check
+//  <Link href="/github/start"
+//  prefetch={false}>GitHub</Link>
+
+// Why use a tag for GitHub OAuth: (Link components have prefetching enabled by default)
+// /github/start → GitHub server → /github/complete
+// Next.js client routing interference can break the OAuth flow during this process
+
 export default function SocialLogin() {
   return (
     <div className="flex flex-col gap-3">
-      <Link
+      <a
         href="/github/start"
         className="primary-btn flex justify-center items-center h-10 gap-2"
       >
@@ -23,7 +39,7 @@ export default function SocialLogin() {
         </svg>
 
         <span>Continue with Github</span>
-      </Link>
+      </a>
       <Link
         href="/sms"
         className="primary-btn flex justify-center items-center h-10 gap-2"
