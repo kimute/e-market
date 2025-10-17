@@ -6,12 +6,11 @@ import { smsLogin } from "./actions";
 
 const initialState = {
   token: false,
-  phone: "",
+  phoneNumber: "",
 };
 
 export default function SMSLogin() {
   const [state, action] = useActionState(smsLogin, initialState);
-  console.log("Current state:", state); // 디버깅용
   return (
     <div className="flex flex-col gap-10 px-6 py-8">
       {/* welcome */}
@@ -26,8 +25,7 @@ export default function SMSLogin() {
           type="text"
           placeholder="Phone number"
           required
-          errors={state.FieldErrors}
-          defaultValue={state.phone || ""}
+          defaultValue={state.phoneNumber || ""}
         />
         
         {state.token ? <FormInput
@@ -37,7 +35,6 @@ export default function SMSLogin() {
           required
           min={100000}
           max={999999}
-          errors={state.FieldErrors}
         />: null}
         <FormButton text="Verify" type="submit"/> 
       </form>
