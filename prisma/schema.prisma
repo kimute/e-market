@@ -23,10 +23,11 @@ model User {
   phone String? @unique
   githubId String? @unique
   googleId String? @unique
+  tokens SMSToken[]
+  products Product[]
   avatar String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  tokens SMSToken[]
 }
 
 model SMSToken {
@@ -36,4 +37,16 @@ model SMSToken {
   updatedAt DateTime @updatedAt
   user User @relation(fields: [userId], references: [id], onDelete: Cascade) // not save in db
   userId Int // this is saved in db
+}
+
+model Product {
+  id Int @id @default(autoincrement())
+  title String
+  price Float
+  description String
+  photo String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int
 }
